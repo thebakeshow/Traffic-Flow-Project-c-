@@ -1,0 +1,264 @@
+//This is the shell for your traffic flow project
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include <unistd.h>
+
+//structures
+
+
+//a car structure
+
+typedef struct car{
+    int carnum;
+    struct car* next;
+
+
+}car;
+
+//Street Structure
+
+typedef struct streethead{ //makes a map for the streets
+    int maxcars;
+    int currentCount;
+    int count;    //number of cars currently in the street
+    car *carfrontptr;   //this points to the first car on the street
+    car *carrearptr;    //this points to the last car on the street
+
+}streethead;
+
+//a header per street - particular streets
+
+typedef struct streethead street1;
+typedef struct streethead street2;    //check syntax?
+typedef struct streethead street3;
+typedef struct streethead street4;
+
+//set up function prototypes
+
+//Initializer for streets
+
+void initialize(streethead *streetName, int maxcars)    //Initializes each variable & front back pointer for the streets 
+{
+    streetName->maxcars = maxcars;
+    streetName->count = 0;
+    streetName->currentCount = 0;
+
+    streetName->carfrontptr = NULL;
+    streetName->carrearptr = NULL;
+}
+
+//Test to see if the street is empty
+int empty(streethead *streetName)
+{
+    return (streetName->carrearptr == NULL || streetName->carfrontptr == NULL);
+}
+
+//Test to see if the street is full
+int full(streethead *streetName)
+{
+    return (streetName -> count == streetName -> maxcars);
+}
+
+//enqueue -- input   the queue header to input to and the car (queue header,car)
+int enq(streethead *streetName, int i); //
+
+int deq(streethead *streetName);
+
+
+//dequeue  -- return the pointer to the dequeue'd car ( dq'd car)
+
+
+
+// update the screen (Once per cycle take care of the pictures of data)
+
+int display(streethead *street1,streethead *street2,streethead *street3,streethead *street4);
+
+
+
+
+//The main program will govern the timing of the simulation this is known as the engine
+//definitions and flow control (engine is one big loop)
+int main() {
+
+    //necessary creation of structures and initializers
+    //Street 1
+    streethead *street1 = (struct streethead*)malloc(sizeof(struct streethead));
+    initialize(street1, 21);
+
+
+
+    //Street 2
+    streethead *street2 = (struct streethead*)malloc(sizeof(struct streethead));
+    initialize(street2, 11);
+
+
+    //Street 3
+    streethead *street3 = (struct streethead*)malloc(sizeof(struct streethead));
+    initialize(street3, 12);
+
+
+    //Street 4 Dequeue Street
+    streethead *street4 = (struct streethead*)malloc(sizeof(struct streethead));
+    initialize(street4, 5);
+
+
+    int entrycar = 0;
+    int input;   //used to get user input
+    int i;   //used for counting in main loop
+    int loopcount;
+    int looptime=15;//this means each pass of the loop represents 15 real seconds
+    struct thelight{
+        int switchtimer=2;// a number of loop cycles = to the duration of the light
+        int directionflag=0; // if 0 then green 2 -> 4 and 3->4 is red, if 1 then green 3 -> 4 and red 2->4
+        int timer = 0;   //increment with each pass through the loop then when == 2 switch direction flag and reset to 0
+    }thelight;
+
+    // ENGINE
+    //Arrival rate of 4 cars per minute
+    //ask how long to run the simulation for and convert that to loop count
+
+    printf("How long in minutes do you want to run the simulation for?   ");
+    scanf(" %i", &input);
+    input = input * 60;  //Multiply by 60 for total seconds
+    loopcount = input/looptime;  // divide by 15 each pass of loop reps 15 sec
+
+    for(i=0; i<loopcount; i++){
+    	
+    	
+        
+        //car enters from highway to street 1 and street 3 every cycle
+        entrycar ++;
+        enq(street1, entrycar);
+        entrycar ++;
+        enq(street3, entrycar);
+        
+         //update display
+        printf("\n User has ran the simulation for %i seconds.", input);
+
+        display(street1,street2,street3,street4);
+        sleep(1);
+        system("cls");
+        
+        enq(street2, deq(street1));
+    
+
+        //is the street full?
+        if(!full(street4)) {
+
+            if(thelight.directionflag==0) {   //If light is green and street 2 not empty enq 4 
+                if (!empty(street2)) {
+
+
+                    enq(street4, deq(street2));
+                }
+            }
+            if(thelight.directionflag==1) {   //If light is green for street 3 enq from there and deq the street
+                if (!empty(street3)) {
+                    enq(street4, deq(street3));
+                }
+            }
+        }
+        
+        
+
+          //update display
+        printf("\n User has ran the simulation for %i seconds.", input);
+
+        display(street1,street2,street3,street4);
+        sleep(1);
+        system("cls");
+        
+        
+        
+
+
+        //Street 4 exits highway every cycle and on every other cycle it exits 2 cars
+        if(!empty(street4)) {   
+
+            if (thelight.timer == 1) {
+                deq(street4);
+                deq(street4);
+            }
+            else{
+                deq(street4);
+            }
+        }
+        
+         //update the light
+        thelight.timer ++;
+        if(thelight.timer==1)
+        {
+            thelight.directionflag=1;     //change light if not keep it 0
+            thelight.timer=0;
+        }
+        else{
+        	thelight.directionflag=0;
+		}
+       
+
+    } //end of the engine loop
+
+
+} //end of main
+
+
+//Function code
+int enq(streethead *streetName, int i){
+
+    if(!full(streetName))
+    {
+        car *var = (struct car*)malloc(sizeof(struct car));  //creation of car in each enq
+
+        var -> carnum = i;
+        var -> next = NULL;
+
+        if(!empty(streetName))
+        {
+            streetName->carrearptr->next = var;
+            streetName->carrearptr = var;   
+        }
+        else
+        {
+            streetName->carfrontptr = streetName->carrearptr = var;
+        }
+        streetName->count++;
+        streetName->currentCount++;
+    }
+    else{
+        return(1) ;
+    }
+}
+
+int display(streethead *street1,streethead *street2,streethead *street3,streethead *street4){
+    printf("\nNumber of cars on Street 1: %i ", street1 -> count);
+    printf("\nNumber of cars on Street 2: %i ", street2 -> count);
+    printf("\nNumber of cars on Street 3: %i ", street3 -> count);
+    printf("\nNumber of cars on Street 4: %i ", street4 -> count);
+
+
+}
+
+
+
+
+
+
+
+
+int deq(streethead *streetName) {
+
+    car *var;
+
+    int q = streetName->carfrontptr->carnum;
+    var = streetName->carfrontptr;
+    streetName->carfrontptr = streetName->carfrontptr->next;
+
+    streetName->count--;
+
+    free(var);
+    return(q);
+
+}
+
